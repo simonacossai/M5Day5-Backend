@@ -102,6 +102,35 @@ router.post(
     }
   }
 );
+router.post(
+  "/:id/upload",
+  upload.single("productPhoto"),
+  async (req, res, next) => {
+    try {
+      const productfile = fileReader("products.json");
+      await writeFile(
+        path.join(productFolderPath, req.file.originalname),
+        req.file.buffer
+      );
+      const filteredFile = productfile.filter(
+        (product) => product.ID !== req.params.id
+      );
+      const product = await productfile.filter(
+        (product) => product.ID === req.params.id
+      );
+      product[0].image = `http://localhost:3001/img/products/${req.file.originalname.toString()}`;
+      filteredFile.push(product[0]);
+      fs.writeFileSync(
+        path.join(__dirname, "products.json"),
+        JSON.stringify(filteredFile)
+      );
+      res.send("Image uploaded!");
+    } catch (error) {
+      console.log(error);
+      next(error);
+    }
+  }
+);
 
 router.put(
   "/:id",
