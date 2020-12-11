@@ -1,14 +1,16 @@
 const { Router } = require("express");
 const { body, validationResult, check } = require("express-validator");
 const express = require("express");
+const fs = require("fs");
+const path = require("path");
+const { writeFile, createReadStream } = require("fs-extra");
+const uniqid = require("uniqid");
+const multer = require("multer");
+const { pipeline } = require("stream");
+
+const upload = multer({});
 
 const router = express.Router();
-
-const path = require("path");
-
-const fs = require("fs");
-
-const uniqid = require("uniqid");
 
 const fileReader = (file) => {
   const myPath = path.join(__dirname, file);
@@ -42,21 +44,64 @@ router.get("/:id", (req, res, next) => {
   }
 });
 
-router.post("/", (req, res, next) => {
-  try {
-    const productsArray = fileReader("products.json");
-    const newproduct = { ...req.body, ID: uniqid(), postedAt: new Date() };
-    productsArray.push(newproduct);
-    console.log(productsArray);
-    fs.writeFileSync(
-      path.join(__dirname, "products.json"),
-      JSON.stringify(productsArray)
-    );
-    res.status(201).send();
-  } catch (err) {
-    console.log(err);
+// router.post("/", (req, res, next) => {
+//   try {
+//     const productsArray = fileReader("products.json");
+//     const newproduct = { ...req.body, ID: uniqid(), postedAt: new Date() };
+//     productsArray.push(newproduct);
+//     console.log(productsArray);
+//     fs.writeFileSync(
+//       path.join(__dirname, "products.json"),
+//       JSON.stringify(productsArray)
+//     );
+//     res.status(201).send();
+//   } catch (err) {
+//     console.log(err);
+//   }
+// });
+router.post(
+  "/",
+  [
+    check("name").exists().withMessage("Insert a name please!"),
+    check("description")
+      .exists()
+      .withMessage("Serious??? Need a description here"),
+    check("brand").exists().withMessage("Need a brand here!"),
+    check("price").exists().isInt().withMessage("PRICE!!!"),
+  ],
+  (req, res, next) => {
+    try {
+      const errors = validationResult(req);
+
+      if (!errors.isEmpty()) {
+        const err = new Error();
+        err.message = errors;
+        err.httpStatusCode = 400;
+        next(err);
+      } else {
+        const projectsDB = fileReader("products.json");
+        const newproject = {
+          ...req.body,
+          ID: uniqid(),
+          createdAt: new Date(),
+        };
+
+        projectsDB.push(newproject);
+
+        fs.writeFileSync(
+          path.join(__dirname, "products.json"),
+          JSON.stringify(projectsDB)
+        );
+
+        res.status(201).send({
+          id: newproject.ID,
+        });
+      }
+    } catch (error) {
+      next(error);
+    }
   }
-});
+);
 
 router.put("/:id", (req, res, next) => {
   const productsArray = fileReader("products.json");
