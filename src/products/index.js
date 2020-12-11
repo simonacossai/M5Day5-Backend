@@ -103,26 +103,37 @@ router.post(
   }
 );
 
-router.put("/:id", (req, res, next) => {
-  const productsArray = fileReader("products.json");
+router.put(
+  "/:id",
+  [
+    check("name").exists().withMessage("Insert a name please!"),
+    check("description")
+      .exists()
+      .withMessage("Serious??? Need a description here"),
+    check("brand").exists().withMessage("Need a brand here!"),
+    check("price").exists().isInt().withMessage("PRICE!!!"),
+  ],
+  (req, res, next) => {
+    const productsArray = fileReader("products.json");
 
-  const newproductArray = productsArray.filter(
-    (products) => products.ID !== req.params.id
-  );
+    const newproductArray = productsArray.filter(
+      (products) => products.ID !== req.params.id
+    );
 
-  const modifiedproducts = req.body;
+    const modifiedproducts = req.body;
 
-  modifiedproducts.ID = req.params.id;
-  newproductArray.push(modifiedproducts);
+    modifiedproducts.ID = req.params.id;
+    newproductArray.push(modifiedproducts);
 
-  fs.writeFileSync(
-    path.join(__dirname, "products.json"),
-    JSON.stringify(newproductArray)
-  );
+    fs.writeFileSync(
+      path.join(__dirname, "products.json"),
+      JSON.stringify(newproductArray)
+    );
 
-  console.log("PUT ID");
-  res.status(200).send();
-});
+    console.log("PUT ID");
+    res.status(200).send();
+  }
+);
 router.delete("/:id", (req, res, next) => {
   const productsArray = fileReader("products.json");
   const newproductArray = productsArray.filter(
